@@ -1,0 +1,49 @@
+server:
+  port: ${PORT:8888}
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/configs/
+        # Git configuration (alternative)
+        # git:
+        #   uri: https://github.com/your-org/config-repo
+        #   default-label: main
+        #   clone-on-start: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,configprops
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    org.springframework.boot: INFO
+
+---
+# Cloud Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: cloud
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/configs/
+
+logging:
+  level:
+    org.springframework.cloud.config: INFO
+    org.springframework.boot: INFO

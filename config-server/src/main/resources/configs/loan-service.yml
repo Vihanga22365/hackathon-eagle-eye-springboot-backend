@@ -1,0 +1,25 @@
+# Loan Service Configuration
+server:
+  port: 8083
+
+spring:
+  application:
+    name: loan-service
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      loanServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+
+# Logging
+logging:
+  level:
+    com.microservices.loan: DEBUG

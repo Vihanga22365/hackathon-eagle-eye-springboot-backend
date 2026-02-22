@@ -1,0 +1,136 @@
+# API Gateway - Cloud Configuration
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  codec:
+    max-in-memory-size: 50MB
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 10000
+        response-timeout: 30s
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        # Auth Service Routes (using Cloud Run service URL)
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+          metadata:
+            response-timeout: 30000
+            connect-timeout: 10000
+
+        # User Service Routes (using Cloud Run service URL)
+        - id: user-service-health
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/api/users/health
+
+        - id: user-service
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: AuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: userServiceCircuitBreaker
+                fallbackUri: forward:/fallback/user
+
+        # Loan Service Routes (using Cloud Run service URL)
+        - id: loan-service-health
+          uri: ${LOAN_SERVICE_URL}
+          predicates:
+            - Path=/api/loans/health
+
+        - id: loan-service-public-uploaded
+          uri: ${LOAN_SERVICE_URL}
+          predicates:
+            - Path=/api/loans/*/uploaded/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: loanServiceCircuitBreaker
+                fallbackUri: forward:/fallback/loan
+
+        - id: loan-service-public-all-uploaded
+          uri: ${LOAN_SERVICE_URL}
+          predicates:
+            - Path=/api/loans/all-uploaded
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: loanServiceCircuitBreaker
+                fallbackUri: forward:/fallback/loan
+
+        - id: loan-service
+          uri: ${LOAN_SERVICE_URL}
+          predicates:
+            - Path=/api/loans/**
+          filters:
+            - name: AuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: loanServiceCircuitBreaker
+                fallbackUri: forward:/fallback/loan
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            exposedHeaders:
+              - Authorization
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        slowCallDurationThreshold: 30s
+        slowCallRateThreshold: 100
+    instances:
+      authServiceCircuitBreaker:
+        baseConfig: default
+      userServiceCircuitBreaker:
+        baseConfig: default
+      loanServiceCircuitBreaker:
+        baseConfig: default
+  timelimiter:
+    instances:
+      authServiceCircuitBreaker:
+        timeoutDuration: 30s
+      userServiceCircuitBreaker:
+        timeoutDuration: 30s
+      loanServiceCircuitBreaker:
+        timeoutDuration: 30s

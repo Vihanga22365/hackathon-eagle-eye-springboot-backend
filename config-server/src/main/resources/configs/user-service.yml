@@ -1,0 +1,33 @@
+# User Service Configuration
+server:
+  port: 8082
+
+spring:
+  application:
+    name: user-service
+
+# Firebase Configuration
+firebase:
+  credentials:
+    path: classpath:firebase-service-account.json
+  database:
+    url: https://hackathon-f1c4a-default-rtdb.firebaseio.com
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      firebaseCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+
+# Logging
+logging:
+  level:
+    com.microservices.user: DEBUG
+    com.google.firebase: INFO

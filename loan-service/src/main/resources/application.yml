@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: loan-service
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+# Firebase Configuration
+firebase:
+  credentials:
+    path: classpath:firebase-service-account.json
+  database:
+    url: https://hackathon-f1c4a-default-rtdb.firebaseio.com/
+
+# Document Storage Configuration
+document:
+  storage:
+    path: ./documents
+
+# Local overrides (if any) can be added here
+# Example:
+# logging:
+#   level:
+#     com.microservices.loan: TRACE

@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: auth-service
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+
+# Local overrides (if any) can be added here
+# Example:
+# logging:
+#   level:
+#     com.microservices.auth: TRACE
+

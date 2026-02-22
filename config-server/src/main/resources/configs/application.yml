@@ -1,0 +1,21 @@
+# Common Configuration for All Services
+# This file contains shared configuration across all microservices
+
+# Management & Actuator (Common)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Logging (Common)
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.springframework.cloud: DEBUG

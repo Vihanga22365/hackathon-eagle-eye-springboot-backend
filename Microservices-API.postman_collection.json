@@ -1,0 +1,810 @@
+{
+  "info": {
+    "_postman_id": "microservices-hackathon-2026",
+    "name": "Spring Boot Microservices - Hackathon",
+    "description": "Complete API collection for Auth, User, and Loan microservices",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Service",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    // Save to collection variables (works without environment)",
+                  "    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+                  "    pm.collectionVariables.set(\"user_id\", jsonData.userId);",
+                  "    pm.collectionVariables.set(\"user_email\", jsonData.email);",
+                  "    pm.collectionVariables.set(\"user_role\", jsonData.role);",
+                  "    ",
+                  "    // Also save to environment if one exists",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    pm.environment.set(\"user_id\", jsonData.userId);",
+                  "    pm.environment.set(\"user_email\", jsonData.email);",
+                  "    pm.environment.set(\"user_role\", jsonData.role);",
+                  "    ",
+                  "    console.log(\"✓ Token saved: \" + jsonData.token.substring(0, 30) + \"...\");",
+                  "    console.log(\"✓ User ID saved: \" + jsonData.userId);",
+                  "    console.log(\"✓ Email: \" + jsonData.email);",
+                  "    console.log(\"✓ Role: \" + jsonData.role);",
+                  "    ",
+                  "    // Show success message",
+                  "    pm.test(\"Registration successful\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Token received\", function () {",
+                  "        pm.expect(jsonData.token).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Customer123!\",\n  \"fullName\": \"Customer User\",\n  \"role\": \"CUSTOMER\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a new user. Token is automatically saved to environment variables."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    // Save to collection variables (works without environment)",
+                  "    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+                  "    pm.collectionVariables.set(\"user_id\", jsonData.userId);",
+                  "    pm.collectionVariables.set(\"user_email\", jsonData.email);",
+                  "    pm.collectionVariables.set(\"user_role\", jsonData.role);",
+                  "    ",
+                  "    // Also save to environment if one exists",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    pm.environment.set(\"user_id\", jsonData.userId);",
+                  "    pm.environment.set(\"user_email\", jsonData.email);",
+                  "    pm.environment.set(\"user_role\", jsonData.role);",
+                  "    ",
+                  "    console.log(\"✓ Token saved: \" + jsonData.token.substring(0, 30) + \"...\");",
+                  "    console.log(\"✓ User ID saved: \" + jsonData.userId);",
+                  "    console.log(\"✓ Email: \" + jsonData.email);",
+                  "    console.log(\"✓ Role: \" + jsonData.role);",
+                  "    ",
+                  "    // Show success message",
+                  "    pm.test(\"Login successful\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Token received\", function () {",
+                  "        pm.expect(jsonData.token).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Customer123!\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with email and password. Token is automatically saved to environment variables."
+          },
+          "response": []
+        },
+        {
+          "name": "Register Admin User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    // Save to collection variables (works without environment)",
+                  "    pm.collectionVariables.set(\"admin_token\", jsonData.token);",
+                  "    pm.collectionVariables.set(\"admin_id\", jsonData.userId);",
+                  "    ",
+                  "    // Also save to environment if one exists",
+                  "    pm.environment.set(\"admin_token\", jsonData.token);",
+                  "    pm.environment.set(\"admin_id\", jsonData.userId);",
+                  "    ",
+                  "    console.log(\"✓ Admin Token saved: \" + jsonData.token.substring(0, 30) + \"...\");",
+                  "    console.log(\"✓ Admin ID saved: \" + jsonData.userId);",
+                  "    console.log(\"✓ Email: \" + jsonData.email);",
+                  "    console.log(\"✓ Role: \" + jsonData.role);",
+                  "    ",
+                  "    // Show success message",
+                  "    pm.test(\"Admin registration successful\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Admin token received\", function () {",
+                  "        pm.expect(jsonData.token).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin123!\",\n  \"fullName\": \"System Admin\",\n  \"role\": \"SYSTEM_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register an admin user. Admin token is saved to environment variables."
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "auth", "health"]
+            },
+            "description": "Check if Auth Service is healthy"
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentication endpoints (public access)"
+    },
+    {
+      "name": "User Service",
+      "item": [
+        {
+          "name": "Get Current User Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    console.log(\"✓ Profile retrieved successfully\");",
+                  "    console.log(\"  User ID: \" + jsonData.userId);",
+                  "    console.log(\"  Email: \" + jsonData.email);",
+                  "    console.log(\"  Name: \" + jsonData.fullName);",
+                  "    console.log(\"  Role: \" + jsonData.role);",
+                  "    ",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Profile contains userId\", function () {",
+                  "        pm.expect(jsonData.userId).to.be.a('string');",
+                  "    });",
+                  "    pm.test(\"Profile contains email\", function () {",
+                  "        pm.expect(jsonData.email).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/users/profile",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users", "profile"]
+            },
+            "description": "Get the authenticated user's profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Current User Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    ",
+                  "    console.log(\"✓ Profile updated successfully\");",
+                  "    console.log(\"  Name: \" + jsonData.fullName);",
+                  "    console.log(\"  Phone: \" + jsonData.phoneNumber);",
+                  "    console.log(\"  Address: \" + jsonData.address);",
+                  "    ",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Profile updated\", function () {",
+                  "        pm.expect(jsonData.fullName).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Updated Customer Name\",\n  \"phoneNumber\": \"1234567890\",\n  \"address\": \"123 Main Street, City, Country\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/users/profile",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users", "profile"]
+            },
+            "description": "Update the authenticated user's profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/users/{{user_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Get user by ID (customer can only get own profile, admin can get any)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users"]
+            },
+            "description": "Get all users (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create User (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"fullName\": \"New User Created By Admin\",\n  \"role\": \"CUSTOMER\",\n  \"phoneNumber\": \"9876543210\",\n  \"address\": \"456 Admin Street\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users"]
+            },
+            "description": "Create a new user (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/users/{{user_id_to_delete}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users", "{{user_id_to_delete}}"]
+            },
+            "description": "Delete a user (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "User Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/users/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "users", "health"]
+            },
+            "description": "Check if User Service is healthy"
+          },
+          "response": []
+        }
+      ],
+      "description": "User management endpoints (requires authentication)"
+    },
+    {
+      "name": "Loan Service",
+      "item": [
+        {
+          "name": "Get My Loans",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/loans/my-loans",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "loans", "my-loans"]
+            },
+            "description": "Get loans for the authenticated user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Loans by User ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/loans/{{user_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "loans", "{{user_id}}"]
+            },
+            "description": "Get loans for a specific user (customer can only get own loans, admin can get any)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Latest Uploaded Loan Details by User ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/loans/{{user_id}}/latest-upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "loans", "{{user_id}}", "latest-upload"]
+            },
+            "description": "Fetch only the most recent uploaded loan details for a given userId from Firebase. Returns latest upload based on uploadTimestamp."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Uploaded Loan Details by User ID and Loan ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/loans/{{user_id}}/uploaded/{{loan_upload_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": [
+                "api",
+                "loans",
+                "{{user_id}}",
+                "uploaded",
+                "{{loan_upload_id}}"
+              ]
+            },
+            "description": "Fetch uploaded loan details using userId and loanId (uploadId key in Firebase)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Uploaded Loan Details by User ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/loans/all-uploaded",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "loans", "all-uploaded"]
+            },
+            "description": "Fetch all uploaded loan details submitted by all users from Firebase, sorted by uploadTimestamp desc. SYSTEM_ADMIN only."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Loan Details with Documents",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "companyName",
+                  "value": "Tech Solutions Inc",
+                  "type": "text",
+                  "description": "Name of the company"
+                },
+                {
+                  "key": "companyAge",
+                  "value": "5",
+                  "type": "text",
+                  "description": "Age of the company in years"
+                },
+                {
+                  "key": "additionalComments",
+                  "value": "Seeking expansion loan for new market entry. Strong growth trajectory over past 3 years.",
+                  "type": "text",
+                  "description": "Additional comments about the loan application"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload one or more PDF documents (financial statements, business plan, etc.)"
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": [],
+                  "description": "Additional PDF document (optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/loans/upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "loans", "upload"]
+            },
+            "description": "Upload loan details with supporting PDF documents. The documents will be stored locally and their content will be saved to Firebase database.\n\nRequired fields:\n- companyName: Name of the company\n- companyAge: Age of the company in years\n- additionalComments: Additional information\n- documents: One or more PDF files\n\nResponse includes:\n- uploadId: Unique identifier for this upload\n- firebasePath: Path in Firebase where data is stored\n- uploadedDocuments: List of uploaded document filenames\n\nNote: Select PDF files using the 'Select Files' button in Postman for the 'documents' fields."
+          },
+          "response": []
+        },
+        {
+          "name": "Loan Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/loans/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "loans", "health"]
+            },
+            "description": "Check if Loan Service is healthy"
+          },
+          "response": []
+        }
+      ],
+      "description": "Loan management endpoints (requires authentication)"
+    },
+    {
+      "name": "Service Health",
+      "item": [
+        {
+          "name": "Config Server Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8888/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8888",
+              "path": ["actuator", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eureka Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8761",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8761"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "API Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["actuator", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Gateway Routes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/actuator/gateway/routes",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["actuator", "gateway", "routes"]
+            },
+            "description": "List all configured routes in API Gateway"
+          },
+          "response": []
+        }
+      ],
+      "description": "Health check endpoints for all services"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_role",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id_to_delete",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

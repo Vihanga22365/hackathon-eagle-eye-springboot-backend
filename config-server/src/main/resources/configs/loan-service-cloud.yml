@@ -1,0 +1,25 @@
+# Loan Service - Cloud Configuration
+server:
+  port: ${PORT:8083}
+
+spring:
+  application:
+    name: loan-service
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      loanService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+  retry:
+    instances:
+      loanService:
+        maxAttempts: 3
+        waitDuration: 1s

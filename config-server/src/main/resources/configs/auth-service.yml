@@ -1,0 +1,29 @@
+# Auth Service Configuration
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  security:
+    user:
+      name: admin
+      password: admin
+
+# Firebase Configuration
+firebase:
+  credentials:
+    path: classpath:firebase-service-account.json
+  database:
+    url: https://hackathon-f1c4a-default-rtdb.firebaseio.com
+
+# JWT Configuration
+jwt:
+  secret: YourSuperSecretKeyForJWTGenerationShouldBeAtLeast256BitsLong
+  expiration: 86400000 # 24 hours in milliseconds
+
+# Logging
+logging:
+  level:
+    com.microservices.auth: DEBUG
+    org.springframework.security: DEBUG
