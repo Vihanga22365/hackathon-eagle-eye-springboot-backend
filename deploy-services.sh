@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Google Cloud Run Deployment Script
 # Deploys all microservices to Cloud Run in the correct order
 
@@ -18,6 +20,34 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}=========================================${NC}"
 echo -e "${BLUE}Deploying Services to Cloud Run${NC}"
 echo -e "${BLUE}=========================================${NC}"
+
+# Wait for a Cloud Run service to become Ready before deploying dependents
+wait_for_service_ready() {
+    local service_name="$1"
+    local max_attempts=30
+    local attempt=1
+
+    echo -e "${BLUE}Waiting for ${service_name} to become ready...${NC}"
+    while [ $attempt -le $max_attempts ]; do
+        local ready_status
+        ready_status=$(gcloud run services describe "$service_name" \
+            --platform=managed \
+            --region="$REGION" \
+            --project="$PROJECT_ID" \
+            --format="value(status.conditions[?type='Ready'].status)")
+
+        if [ "$ready_status" = "True" ]; then
+            echo -e "${GREEN}${service_name} is ready.${NC}"
+            return 0
+        fi
+
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+
+    echo -e "${RED}Timeout: ${service_name} did not become ready in time.${NC}"
+    return 1
+}
 
 # Check if PROJECT_ID is set
 if [ "$PROJECT_ID" == "YOUR_GCP_PROJECT_ID" ]; then
@@ -45,17 +75,15 @@ gcloud run deploy config-server \
     --port=8888 \
     --memory=512Mi \
     --cpu=1 \
+    --min-instances=1 \
     --max-instances=3 \
+    --concurrency=40 \
     --set-env-vars="SPRING_PROFILES_ACTIVE=cloud" \
     --project=$PROJECT_ID
 
-if [ $? -eq 0 ]; then
-    CONFIG_SERVER_URL=$(gcloud run services describe config-server --platform=managed --region=$REGION --format='value(status.url)')
-    echo -e "${GREEN}Config Server deployed at: $CONFIG_SERVER_URL${NC}"
-else
-    echo -e "${RED}Failed to deploy config-server${NC}"
-    exit 1
-fi
+CONFIG_SERVER_URL=$(gcloud run services describe config-server --platform=managed --region=$REGION --project=$PROJECT_ID --format='value(status.url)')
+echo -e "${GREEN}Config Server deployed at: $CONFIG_SERVER_URL${NC}"
+wait_for_service_ready "config-server"
 
 # Deploy Auth Service
 echo -e "${GREEN}Deploying auth-service...${NC}"
@@ -67,18 +95,15 @@ gcloud run deploy auth-service \
     --port=8081 \
     --memory=1Gi \
     --cpu=1 \
+    --min-instances=1 \
     --max-instances=5 \
-    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=optional:configserver:$CONFIG_SERVER_URL,JWT_SECRET=$JWT_SECRET,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID=$FIREBASE_CLIENT_ID,FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL,FIREBASE_DATABASE_URL=$FIREBASE_DATABASE_URL" \
+    --concurrency=40 \
+    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=configserver:$CONFIG_SERVER_URL,JWT_SECRET=$JWT_SECRET,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID=$FIREBASE_CLIENT_ID,FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL,FIREBASE_DATABASE_URL=$FIREBASE_DATABASE_URL" \
     --set-secrets="FIREBASE_PRIVATE_KEY=firebase-private-key:latest" \
     --project=$PROJECT_ID
 
-if [ $? -eq 0 ]; then
-    AUTH_SERVICE_URL=$(gcloud run services describe auth-service --platform=managed --region=$REGION --format='value(status.url)')
-    echo -e "${GREEN}Auth Service deployed at: $AUTH_SERVICE_URL${NC}"
-else
-    echo -e "${RED}Failed to deploy auth-service${NC}"
-    exit 1
-fi
+AUTH_SERVICE_URL=$(gcloud run services describe auth-service --platform=managed --region=$REGION --project=$PROJECT_ID --format='value(status.url)')
+echo -e "${GREEN}Auth Service deployed at: $AUTH_SERVICE_URL${NC}"
 
 # Deploy User Service
 echo -e "${GREEN}Deploying user-service...${NC}"
@@ -90,18 +115,15 @@ gcloud run deploy user-service \
     --port=8082 \
     --memory=1Gi \
     --cpu=1 \
+    --min-instances=1 \
     --max-instances=5 \
-    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=optional:configserver:$CONFIG_SERVER_URL,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID=$FIREBASE_CLIENT_ID,FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL,FIREBASE_DATABASE_URL=$FIREBASE_DATABASE_URL" \
+    --concurrency=40 \
+    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=configserver:$CONFIG_SERVER_URL,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID=$FIREBASE_CLIENT_ID,FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL,FIREBASE_DATABASE_URL=$FIREBASE_DATABASE_URL" \
     --set-secrets="FIREBASE_PRIVATE_KEY=firebase-private-key:latest" \
     --project=$PROJECT_ID
 
-if [ $? -eq 0 ]; then
-    USER_SERVICE_URL=$(gcloud run services describe user-service --platform=managed --region=$REGION --format='value(status.url)')
-    echo -e "${GREEN}User Service deployed at: $USER_SERVICE_URL${NC}"
-else
-    echo -e "${RED}Failed to deploy user-service${NC}"
-    exit 1
-fi
+USER_SERVICE_URL=$(gcloud run services describe user-service --platform=managed --region=$REGION --project=$PROJECT_ID --format='value(status.url)')
+echo -e "${GREEN}User Service deployed at: $USER_SERVICE_URL${NC}"
 
 # Deploy Loan Service
 echo -e "${GREEN}Deploying loan-service...${NC}"
@@ -113,18 +135,15 @@ gcloud run deploy loan-service \
     --port=8083 \
     --memory=512Mi \
     --cpu=1 \
+    --min-instances=1 \
     --max-instances=5 \
-    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=optional:configserver:$CONFIG_SERVER_URL,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID=$FIREBASE_CLIENT_ID,FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL,FIREBASE_DATABASE_URL=$FIREBASE_DATABASE_URL" \
+    --concurrency=40 \
+    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=configserver:$CONFIG_SERVER_URL,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_PRIVATE_KEY_ID=$FIREBASE_PRIVATE_KEY_ID,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,FIREBASE_CLIENT_ID=$FIREBASE_CLIENT_ID,FIREBASE_CLIENT_CERT_URL=$FIREBASE_CLIENT_CERT_URL,FIREBASE_DATABASE_URL=$FIREBASE_DATABASE_URL" \
     --set-secrets="FIREBASE_PRIVATE_KEY=firebase-private-key:latest" \
     --project=$PROJECT_ID
 
-if [ $? -eq 0 ]; then
-    LOAN_SERVICE_URL=$(gcloud run services describe loan-service --platform=managed --region=$REGION --format='value(status.url)')
-    echo -e "${GREEN}Loan Service deployed at: $LOAN_SERVICE_URL${NC}"
-else
-    echo -e "${RED}Failed to deploy loan-service${NC}"
-    exit 1
-fi
+LOAN_SERVICE_URL=$(gcloud run services describe loan-service --platform=managed --region=$REGION --project=$PROJECT_ID --format='value(status.url)')
+echo -e "${GREEN}Loan Service deployed at: $LOAN_SERVICE_URL${NC}"
 
 # Deploy API Gateway
 echo -e "${GREEN}Deploying api-gateway...${NC}"
@@ -136,17 +155,14 @@ gcloud run deploy api-gateway \
     --port=8080 \
     --memory=1Gi \
     --cpu=1 \
+    --min-instances=2 \
     --max-instances=10 \
-    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=optional:configserver:$CONFIG_SERVER_URL,JWT_SECRET=$JWT_SECRET,AUTH_SERVICE_URL=$AUTH_SERVICE_URL,USER_SERVICE_URL=$USER_SERVICE_URL,LOAN_SERVICE_URL=$LOAN_SERVICE_URL" \
+    --concurrency=80 \
+    --set-env-vars="SPRING_PROFILES_ACTIVE=cloud,CONFIG_SERVER_URL=$CONFIG_SERVER_URL,SPRING_CONFIG_IMPORT=configserver:$CONFIG_SERVER_URL,JWT_SECRET=$JWT_SECRET,AUTH_SERVICE_URL=$AUTH_SERVICE_URL,USER_SERVICE_URL=$USER_SERVICE_URL,LOAN_SERVICE_URL=$LOAN_SERVICE_URL" \
     --project=$PROJECT_ID
 
-if [ $? -eq 0 ]; then
-    GATEWAY_URL=$(gcloud run services describe api-gateway --platform=managed --region=$REGION --format='value(status.url)')
-    echo -e "${GREEN}API Gateway deployed at: $GATEWAY_URL${NC}"
-else
-    echo -e "${RED}Failed to deploy api-gateway${NC}"
-    exit 1
-fi
+GATEWAY_URL=$(gcloud run services describe api-gateway --platform=managed --region=$REGION --project=$PROJECT_ID --format='value(status.url)')
+echo -e "${GREEN}API Gateway deployed at: $GATEWAY_URL${NC}"
 
 echo ""
 echo -e "${BLUE}=========================================${NC}"
