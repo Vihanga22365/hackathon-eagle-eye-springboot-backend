@@ -84,6 +84,18 @@ spring:
                 name: loanServiceCircuitBreaker
                 fallbackUri: forward:/fallback/loan
 
+        # AI Agents Feedback Routes (Protected - JWT required, routed to Loan Service)
+        - id: ai-agents-feedback-service
+          uri: ${LOAN_SERVICE_URL}
+          predicates:
+            - Path=/api/ai-agents-feedback/**
+          filters:
+            - name: AuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: loanServiceCircuitBreaker
+                fallbackUri: forward:/fallback/loan
+
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       globalcors:

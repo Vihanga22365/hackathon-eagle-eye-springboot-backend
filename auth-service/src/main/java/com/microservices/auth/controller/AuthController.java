@@ -97,4 +97,35 @@ public class AuthController {
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("Auth Service is running");
     }
+
+    /**
+     * Refresh an expired JWT token
+     *
+     * POST /api/auth/refresh
+     * Header: Authorization: Bearer <expired-token>
+     *
+     * Returns a brand-new JWT without requiring the user to log in again.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        log.info("Token refresh request received");
+        try {
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(AuthResponse.builder()
+                                .message("Missing or invalid Authorization header")
+                                .build());
+            }
+            String token = authorizationHeader.substring(7);
+            AuthResponse response = authService.refreshToken(token);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Token refresh failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.builder()
+                            .message("Token refresh failed: " + e.getMessage())
+                            .build());
+        }
+    }
 }

@@ -10,6 +10,7 @@ import com.microservices.auth.dto.LoginRequest;
 import com.microservices.auth.dto.RegisterRequest;
 import com.microservices.auth.model.UserRole;
 import com.microservices.auth.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -176,5 +177,60 @@ public class AuthService {
      */
     public UserRole getRoleFromToken(String token) {
         return jwtUtil.extractRole(token);
+    }
+
+    /**
+     * Refresh an expired (or soon-to-expire) JWT token.
+     *
+     * Extracts userId/email/role from the old token without checking expiry,
+     * re-verifies the user still exists in Firebase, then issues a fresh token.
+     */
+    public AuthResponse refreshToken(String expiredToken) {
+        try {
+            log.info("Refreshing token");
+
+            // Extract claims ignoring expiry
+            Claims claims = jwtUtil.extractClaimsIgnoreExpiry(expiredToken);
+            String userId = claims.get("userId", String.class);
+            String role   = claims.get("role",   String.class);
+
+            if (userId == null || role == null) {
+                throw new RuntimeException("Token missing required claims");
+            }
+
+            // Re-fetch user from Firebase to confirm the account still exists
+            UserRecord userRecord = firebaseAuth.getUser(userId);
+
+            // Honour any role update that may have happened since the original token was issued
+            UserRole userRole = UserRole.valueOf(role);
+            if (userRecord.getCustomClaims() != null
+                    && userRecord.getCustomClaims().containsKey("role")) {
+                userRole = UserRole.valueOf(
+                        userRecord.getCustomClaims().get("role").toString());
+            }
+
+            String newToken = jwtUtil.generateToken(
+                    userRecord.getUid(),
+                    userRecord.getEmail(),
+                    userRole);
+
+            log.info("Token refreshed successfully for user: {}", userRecord.getUid());
+
+            return AuthResponse.builder()
+                    .token(newToken)
+                    .userId(userRecord.getUid())
+                    .email(userRecord.getEmail())
+                    .fullName(userRecord.getDisplayName())
+                    .role(userRole)
+                    .message("Token refreshed successfully")
+                    .build();
+
+        } catch (FirebaseAuthException e) {
+            log.error("Firebase error during token refresh: {}", e.getMessage());
+            throw new RuntimeException("Token refresh failed: user not found");
+        } catch (Exception e) {
+            log.error("Token refresh error: {}", e.getMessage());
+            throw new RuntimeException("Token refresh failed: " + e.getMessage());
+        }
     }
 }

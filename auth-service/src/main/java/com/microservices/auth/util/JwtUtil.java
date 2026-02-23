@@ -2,6 +2,7 @@ package com.microservices.auth.util;
 
 import com.microservices.auth.model.UserRole;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,19 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    /**
+     * Extract claims from a token even if it is expired.
+     * Used exclusively by the refresh-token flow.
+     */
+    public Claims extractClaimsIgnoreExpiry(String token) {
+        try {
+            return extractAllClaims(token);
+        } catch (ExpiredJwtException e) {
+            log.info("Extracting claims from expired token for refresh");
+            return e.getClaims();
+        }
     }
 
     /**

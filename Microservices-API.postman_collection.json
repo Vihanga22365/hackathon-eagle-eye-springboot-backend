@@ -209,6 +209,54 @@
             "description": "Check if Auth Service is healthy"
           },
           "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.token);",
+                  "    pm.environment.set('jwt_token', jsonData.token);",
+                  "    console.log('✓ Token refreshed: ' + jsonData.token.substring(0, 30) + '...');",
+                  "    pm.test('Token refreshed successfully', function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test('New token received', function () {",
+                  "        pm.expect(jsonData.token).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/refresh",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "Obtain a fresh JWT using an existing (or recently expired) token.\n\nSend the old token in the Authorization header — no request body needed.\n\nOn success, the new token is automatically saved to the {{jwt_token}} collection variable."
+          },
+          "response": []
         }
       ],
       "description": "Authentication endpoints (public access)"
@@ -683,6 +731,186 @@
       "description": "Loan management endpoints (requires authentication)"
     },
     {
+      "name": "AI Agents Feedback",
+      "item": [
+        {
+          "name": "Create AI Agents Feedback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"feedback_id\", jsonData.data.id);",
+                  "    pm.collectionVariables.set(\"feedback_loan_id\", jsonData.data.loanId);",
+                  "    pm.collectionVariables.set(\"feedback_loan_user_id\", jsonData.data.loanUserId);",
+                  "    console.log(\"✓ Feedback ID saved: \" + jsonData.data.id);",
+                  "    pm.test(\"Feedback created successfully\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loanId\": \"UPLOAD-1771416926728-256ac1cf\",\n  \"loanUserId\": \"0x8Uf1GqLJXNqzktg979z3027c02\",\n  \"summary\": {\n    \"riskLevel\": 65,\n    \"riskReason\": \"- Identity verification issues and company name mismatch\\n- Missing key loan application documents\\n- Medium risk rating from policy due to incomplete verification\",\n    \"loanTypeDecision\": \"Non Secured\",\n    \"loanTypeReason\": \"- Collateral requirement not specified due to incomplete verification\\n- Policy review recommends rejection until full verification\\n- Verification flagged identity and documentation discrepancies\",\n    \"recommendedRate\": \"N/A\",\n    \"rateReason\": \"- Loan application rejected due to verification and identity issues\\n- No preliminary or final interest rate recommended\\n- Market analysis confirms ineligibility for loan currently\",\n    \"requestedLoanAmount\": \"REQUESTED_AMOUNT_NOT_AVAILABLE\",\n    \"recommendedLoanAmount\": \"N/A\",\n    \"reasonForLoanAmount\": \"- Loan rejected due to incomplete identity verification\\n- No eligible loan amount can be recommended at this stage\\n- Reapply once all verification documents are submitted\"\n  },\n  \"agentResponseSummary\": {\n    \"agentTasks\": [\n      {\n        \"agent\": \"Verification Analyzer Agent\",\n        \"task\": \"Calling tool fetch_loan_details\"\n      },\n      {\n        \"agent\": \"Verification Analyzer Agent\",\n        \"task\": \"Received tool response fetch_loan_details\"\n      },\n      {\n        \"agent\": \"Verification Analyzer Agent\",\n        \"task\": \"Calling tool web_search_tool\"\n      },\n      {\n        \"agent\": \"Verification Analyzer Agent\",\n        \"task\": \"Received tool response web_search_tool\"\n      },\n      {\n        \"agent\": \"Policy Reviewer Agent\",\n        \"task\": \"Calling tool policies_rag_tool\"\n      },\n      {\n        \"agent\": \"Policy Reviewer Agent\",\n        \"task\": \"Received tool response policies_rag_tool\"\n      },\n      {\n        \"agent\": \"Policy Reviewer Agent\",\n        \"task\": \"Calling tool policies_rag_tool\"\n      },\n      {\n        \"agent\": \"Policy Reviewer Agent\",\n        \"task\": \"Received tool response policies_rag_tool\"\n      }\n    ],\n    \"decisions\": {\n      \"verificationAnalyzerAgent\": \"Loan Verification Summary\\n- Verification Status: ADDITIONAL_INFO_REQUIRED\\n- Risk Level: MEDIUM\\n- Document Authenticity: Documents appear legitimate with official SEC filing and company registration details; signatures and stamps present on SEC Form 8-K.\\n- Fraud Detection: No direct fraud indicators found, but company name \\\"Tech Solutions Inc\\\" does not match SEC filing for FedEx Corporation, raising potential identity mismatch.\\n- Completeness: Partial documents provided; missing key loan application documents such as financial statements, identity verification of applicant, and loan agreement.\\n- Red Flags: Company name mismatch between loan application (\\\"Tech Solutions Inc\\\") and SEC document (FedEx Corporation); no corroborating public information for applicant company.\\n- Recommendation: Request exact missing items - financial statements, applicant identity verification documents, and loan agreement for full verification and resolution of company identity discrepancy.\",\n      \"policyReviewerAgent\": \"Policy Review Summary\\n- Policy Review Status: REJECTED\\n- Credit Risk Rating: BB (Medium risk due to identity verification issues and company name mismatch)\\n- Recommended Loan Type: Expansion Loan (subject to full verification)\\n- Eligible Loan Amount: Not eligible currently due to incomplete verification and identity mismatch\\n- Recommended Tenure: N/A\\n- Collateral Requirement: N/A\\n- Preliminary Interest Rate: N/A\\n- Sources: GLOBAL COMMERCIAL BANK - INTERNAL CREDIT POLICY (FY 2026), Sections 3.1, 4.0, 5.0\",\n      \"marketAnalyzerAgent\": \"Market Analysis Summary\\n- Market Analysis Status: COMPLETED\\n- Preliminary Rate: N/A (Loan application rejected due to verification and identity issues)\\n- SOFR / Benchmark Snapshot: Pending (SOFR and benchmark rates fetched but not applicable due to rejection)\\n- Final Interest Rate Recommendation: Not applicable (loan not eligible currently)\\n- Confidence Level: HIGH (based on strict policy adherence and risk assessment)\\n- Sources: GLOBAL COMMERCIAL BANK - INTERNAL CREDIT POLICY (FY 2026), Verification and Policy Review Reports\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/ai-agents-feedback",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "ai-agents-feedback"]
+            },
+            "description": "Create a new AI agents feedback record.\n\nRequired body fields:\n- loanId: ID of the loan being evaluated\n- loanUserId: ID of the user who owns the loan\n- summary: High-level risk/loan-type summary object\n  - riskLevel (0-100)\n  - riskReason (1-3 bullet points)\n  - loanTypeDecision: \"Secured\" | \"Non Secured\"\n  - loanTypeReason (1-3 bullet points)\n  - recommendedRate: \"<min%>-<max%>\" | \"N/A\"\n  - rateReason (1-3 bullet points)\n  - requestedLoanAmount: requested amount or \"REQUESTED_AMOUNT_NOT_AVAILABLE\"\n  - recommendedLoanAmount: \"<min>-<max>\" | \"N/A\"\n  - reasonForLoanAmount (1-3 bullet points)\n- agentResponseSummary: Object with agentTasks (1 or more) and decisions\n\nNote: loggedUserId is automatically taken from the authenticated user's JWT (X-User-Id header set by API Gateway).\n\nThe service stamps id, timestamp (epoch ms) and dateTime (ISO-8601 UTC) automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Get AI Agents Feedback by Feedback ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/ai-agents-feedback/{{feedback_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "ai-agents-feedback", "{{feedback_id}}"]
+            },
+            "description": "Retrieve a single AI agents feedback record by its unique feedback ID.\n\nPath variable:\n- feedbackId: the auto-generated ID returned when the record was created (e.g. FEEDBACK-1740267526728-abc12345)\n\nAccess control:\n- CUSTOMER: can only view records where loanUserId matches their own user ID\n- SYSTEM_ADMIN: can view any record"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All AI Agents Feedback",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/ai-agents-feedback",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "ai-agents-feedback"]
+            },
+            "description": "Retrieve all AI agents feedback records ordered newest-first.\n\nAccess: SYSTEM_ADMIN only.\n\nResponse includes:\n- total: total number of records\n- data: array of feedback objects"
+          },
+          "response": []
+        },
+        {
+          "name": "Get AI Agents Feedback by Loan ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/ai-agents-feedback/loan/{{feedback_loan_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": [
+                "api",
+                "ai-agents-feedback",
+                "loan",
+                "{{feedback_loan_id}}"
+              ]
+            },
+            "description": "Retrieve all AI agents feedback records for a specific loan ID.\n\nPath variable:\n- loanId: ID of the loan (e.g. UPLOAD-1771416926728-256ac1cf)\n\nResponse includes total count and data array."
+          },
+          "response": []
+        },
+        {
+          "name": "Get AI Agents Feedback by Loan User ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/ai-agents-feedback/loan-user/{{feedback_loan_user_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": [
+                "api",
+                "ai-agents-feedback",
+                "loan-user",
+                "{{feedback_loan_user_id}}"
+              ]
+            },
+            "description": "Retrieve all AI agents feedback records for the owner of the loan.\n\nPath variable:\n- loanUserId: ID of the user who owns the loan\n\nAccess control:\n- CUSTOMER: can only query their own loanUserId\n- SYSTEM_ADMIN: can query any loanUserId\n\nResponse includes total count and data array."
+          },
+          "response": []
+        }
+      ],
+      "description": "AI Agents Feedback endpoints — create and query feedback records stored in the aiAgentsFeedback Firebase collection"
+    },
+    {
       "name": "Service Health",
       "item": [
         {
@@ -805,6 +1033,24 @@
       "key": "user_id_to_delete",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "feedback_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-set after Create AI Agents Feedback request"
+    },
+    {
+      "key": "feedback_loan_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-set after Create AI Agents Feedback request — used for get-by-loan-id"
+    },
+    {
+      "key": "feedback_loan_user_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-set after Create AI Agents Feedback request — used for get-by-loan-user-id"
     }
   ]
 }
